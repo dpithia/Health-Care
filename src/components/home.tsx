@@ -1,31 +1,49 @@
+// components/Home.tsx
 import React, { useEffect, useState } from "react";
 import SymptomSearch from "./SymptomSearch";
 import SymptomTagList from "./SymptomTagList";
 import UrgencyAssessment from "./UrgencyAssessment";
 import PotentialDiagnoses from "./PotentialDiagnoses";
+import ProviderRecommendation from "./ProviderRecommendation";
 import { useSymptoms } from "../context/SymptomContext";
 import NIHService from "../services/NIHService";
-
-interface UrgencyResult {
-  level: "low" | "moderate" | "high" | "emergency";
-  reasoning: string[];
-}
+import { UrgencyResult } from "../types/medical";
 
 const Home = () => {
   const { state, dispatch } = useSymptoms();
   const [urgencyResult, setUrgencyResult] = useState<UrgencyResult | null>(
     null
   );
+  const [highestSeverity, setHighestSeverity] = useState<
+    "low" | "moderate" | "high"
+  >("low");
+
+  useEffect(() => {
+    // Update severity based on urgency result
+    if (urgencyResult) {
+      switch (urgencyResult.level) {
+        case "emergency":
+          setHighestSeverity("high");
+          break;
+        case "high":
+          setHighestSeverity("high");
+          break;
+        case "moderate":
+          setHighestSeverity("moderate");
+          break;
+        default:
+          setHighestSeverity("low");
+      }
+    }
+  }, [urgencyResult]);
 
   const handleSymptomSelect = async (symptomName: string) => {
     dispatch({ type: "ADD_SYMPTOM", payload: symptomName });
-    // Trigger assessment with updated symptoms
     handleCheckUrgency([...state.currentSymptoms, symptomName]);
   };
 
   const handleSymptomRemove = (id: string) => {
     dispatch({ type: "REMOVE_SYMPTOM", payload: id });
-    // Re-assess after removal
     const updatedSymptoms = state.currentSymptoms.filter((s) => s !== id);
     handleCheckUrgency(updatedSymptoms);
   };
@@ -52,8 +70,6 @@ const Home = () => {
       dispatch({ type: "SET_LOADING", payload: false });
     }
   };
-
-  console.log("Home rendering, current symptoms:", state.currentSymptoms);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#2B4570]/5 to-[#A6E1E7]/5 p-8 relative overflow-hidden">
@@ -91,6 +107,7 @@ const Home = () => {
         />
 
         <PotentialDiagnoses symptoms={state.currentSymptoms} />
+        <ProviderRecommendation severity={highestSeverity} />
       </div>
     </div>
   );

@@ -28,6 +28,25 @@ export type UrgencyLevel = "low" | "moderate" | "high" | "emergency";
 export interface ConditionResult {
   primary_name: string;
   consumer_name: string;
-  related_symptoms?: string[];
-  severity?: number;
+  description?: string;
+  symptoms?: string[];
+  severity?: "low" | "moderate" | "high";
+  recommended_action?: string;
+  info_link?: string;
+}
+
+export interface SymptomMatch {
+  matchedSymptoms: string[];
+  unmatchedSymptoms: string[];
+  matchScore: number;
+}
+
+export interface UrgencyResult {
+  level: "low" | "moderate" | "high" | "emergency";
+  reasoning: string[];
+}
+
+export interface Symptom {
+  id: string;
+  name: string;
 }

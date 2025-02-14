@@ -1,22 +1,18 @@
-import { AxiosError } from "axios";
-import { ConditionResult, SymptomRecord, UrgencyLevel } from "../types/medical";
-
-class APIError extends Error {
-  constructor(message: string, public statusCode?: number) {
-    super(message);
-    this.name = "APIError";
-  }
-}
+// services/NIHService.ts
+import { ConditionResult, UrgencyResult } from "../types/medical";
 
 class NIHService {
   private static BASE_URL =
     "https://clinicaltables.nlm.nih.gov/api/conditions/v3";
 
-  static async searchConditions(query: string): Promise<ConditionResult[]> {
-    if (!query.trim()) {
+  static async getPotentialDiagnoses(
+    symptoms: string[]
+  ): Promise<ConditionResult[]> {
+    if (symptoms.length === 0) {
       return [];
     }
 
+    const query = symptoms.join(",");
     try {
       const response = await fetch(
         `${this.BASE_URL}/search?terms=${encodeURIComponent(
@@ -25,7 +21,7 @@ class NIHService {
       );
 
       if (!response.ok) {
-        throw new APIError("Failed to fetch conditions", response.status);
+        throw new Error("Failed to fetch potential diagnoses");
       }
 
       const [total, terms, fields, items] = await response.json();
@@ -33,78 +29,46 @@ class NIHService {
       return items.map((item: string[]) => ({
         primary_name: item[0],
         consumer_name: item[1] || item[0],
-        severity: this.calculateSymptomSeverity(item[0]),
+        severity: this.determineSeverity(item[0]),
+        recommended_action: this.getRecommendedAction(item[0]),
       }));
     } catch (error) {
-      console.error("Error searching conditions:", error);
-      if (error instanceof APIError) {
-        throw error;
-      }
-      throw new APIError("Failed to search conditions");
+      console.error("Error fetching potential diagnoses:", error);
+      throw error;
     }
   }
 
-  static async getConditionDetails(
-    id: string
-  ): Promise<ConditionResult | null> {
-    try {
-      const response = await fetch(
-        `${this.BASE_URL}/details?terms=${encodeURIComponent(id)}`
-      );
-      const data = await response.json();
-
-      return {
-        primary_name: data.primary_name,
-        consumer_name: data.consumer_name || data.primary_name,
-      };
-    } catch (error) {
-      console.error("Error fetching condition details:", error);
-      return null;
-    }
-  }
-
-  static determineUrgency(conditions: ConditionResult[]): {
-    level: "low" | "moderate" | "high" | "emergency";
-    reasoning: string[];
-  } {
+  static async determineUrgency(
+    conditions: ConditionResult[]
+  ): Promise<UrgencyResult> {
     const emergencyConditions = [
       "heart attack",
       "stroke",
-      "seizure",
-      "anaphylaxis",
-      "severe bleeding",
-      "chest pain",
-      "difficulty breathing",
+      "severe",
+      "emergency",
     ];
+    const urgentConditions = ["infection", "fracture", "acute"];
 
-    const highUrgencyConditions = [
-      "pneumonia",
-      "appendicitis",
-      "broken bone",
-      "severe pain",
-      "high fever",
-      "severe dehydration",
-    ];
-
-    let level: "low" | "moderate" | "high" | "emergency" = "low";
+    let level: UrgencyResult["level"] = "low";
     const reasoning: string[] = [];
 
     for (const condition of conditions) {
-      const name = condition.consumer_name.toLowerCase();
+      const name = condition.primary_name.toLowerCase();
 
-      if (emergencyConditions.some((ec) => name.includes(ec))) {
+      if (emergencyConditions.some((term) => name.includes(term))) {
         level = "emergency";
         reasoning.push(
           `${condition.consumer_name} requires immediate medical attention`
         );
-      } else if (highUrgencyConditions.some((hc) => name.includes(hc))) {
-        if (level !== "emergency") {
-          level = "high";
-        }
-        reasoning.push(
-          `${condition.consumer_name} may require urgent medical attention`
-        );
+      } else if (urgentConditions.some((term) => name.includes(term))) {
+        if (level !== "emergency") level = "high";
+        reasoning.push(`${condition.consumer_name} may require urgent care`);
       }
+    }
+
+    if (conditions.length > 2 && level === "low") {
+      level = "moderate";
+      reasoning.push("Multiple symptoms may require medical evaluation");
     }
 
     if (reasoning.length === 0) {
@@ -116,19 +80,37 @@ class NIHService {
     return { level, reasoning };
   }
 
-  private static calculateSymptomSeverity(symptom: string): number {
-    const emergencyKeywords = ["severe", "acute", "extreme", "critical"];
-    const moderateKeywords = ["moderate", "mild", "persistent"];
+  private static determineSeverity(
+    condition: string
+  ): "low" | "moderate" | "high" {
+    const emergencyConditions = [
+      "heart attack",
+      "stroke",
+      "severe",
+      "emergency",
+    ];
+    const moderateConditions = ["infection", "fracture", "acute"];
 
-    const symptomLower = symptom.toLowerCase();
+    condition = condition.toLowerCase();
 
-    if (emergencyKeywords.some((keyword) => symptomLower.includes(keyword))) {
-      return 1.0;
+    if (emergencyConditions.some((term) => condition.includes(term))) {
+      return "high";
+    } else if (moderateConditions.some((term) => condition.includes(term))) {
+      return "moderate";
     }
-    if (moderateKeywords.some((keyword) => symptomLower.includes(keyword))) {
-      return 0.5;
+    return "low";
+  }
+
+  private static getRecommendedAction(condition: string): string {
+    const severity = this.determineSeverity(condition);
+    switch (severity) {
+      case "high":
+        return "Seek immediate medical attention";
+      case "moderate":
+        return "Schedule an appointment with your healthcare provider soon";
+      default:
+        return "Monitor symptoms and rest";
     }
-    return 0.25;
   }
 }
 
