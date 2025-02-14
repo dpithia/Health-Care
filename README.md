@@ -1,30 +1,108 @@
-# React + TypeScript + Vite
+# Healthcare Symptom Checker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern web application that helps users assess their symptoms and find appropriate medical care. Built with React, TypeScript, and Tailwind CSS, utilizing the NIH Clinical Tables API for medical data.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🔍 Symptom Assessment
+- Real-time symptom search using NIH medical database
+- Smart symptom suggestions and auto-complete
+- Multi-symptom analysis
 
-## Expanding the ESLint configuration
+### 🏥 Diagnosis Support
+- AI-powered symptom analysis
+- Urgency level assessment
+- Potential condition matching
+- Medical terminology explanations
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### 📍 Healthcare Provider Recommendations
+- Severity-based care recommendations
+- Facility type suggestions
+- Location-based facility finder
+- Emergency care guidance
 
-- Configure the top-level `parserOptions` property like this:
+### 💻 Technical Features
+- Modern, responsive UI
+- Real-time API integration
+- Geolocation support
+- Accessible design
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+## Getting Started
+
+### Prerequisites
+- Node.js (version 14 or higher)
+- npm or yarn
+- Modern web browser
+
+### Installation
+
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/healthcare-symptom-checker.git
+cd healthcare-symptom-checker
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Start the development server
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+4. Open [http://localhost:5173](http://localhost:5173) in your browser
+
+## Technologies Used
+
+- **Frontend Framework**: React
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Medical Data**: NIH Clinical Tables API
+- **Icons**: Lucide React
+- **State Management**: React Context
+
+## Project Structure
+
+```
+src/
+├── components/        # React components
+├── context/          # Context providers
+├── services/         # API services
+├── types/            # TypeScript definitions
+└── lib/             # Utility functions
+```
+
+## API Integration
+
+This project uses the NIH Clinical Tables API for medical data:
+- Endpoint: https://clinicaltables.nlm.nih.gov/api/conditions/v3
+- Documentation: [NIH Clinical Tables API Documentation](https://clinicaltables.nlm.nih.gov/apidoc/conditions/v3/doc.html)
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+
+## Disclaimer
+
+This application is for informational purposes only and should not be considered medical advice. Always consult with a qualified healthcare professional for medical concerns.
+
+## Acknowledgments
+
+- NIH Clinical Tables API for medical data
+- React and TypeScript communities
+- Tailwind CSS for styling utilities
+- Lucide for beautiful icons****
