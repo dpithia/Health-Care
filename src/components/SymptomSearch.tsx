@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Search, X } from "lucide-react";
@@ -11,9 +11,12 @@ import {
   CommandList,
 } from "./ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { useSymptoms } from "../context/SymptomContext";
+import NIHService from "../services/NIHService";
+import { ConditionResult } from "../types/medical";
 
 interface SymptomSearchProps {
-  onSymptomSelect?: (symptom: string) => void;
+  onSymptomSelect: (symptom: string) => void;
   placeholder?: string;
 }
 
@@ -31,17 +34,42 @@ const commonSymptoms = [
 ];
 
 const SymptomSearch = ({
-  onSymptomSelect = () => {},
+  onSymptomSelect,
   placeholder = "Search symptoms...",
 }: SymptomSearchProps) => {
+  const { state, dispatch } = useSymptoms();
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
+  const [suggestions, setSuggestions] = useState<ConditionResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleSelect = (currentValue: string) => {
     setValue(currentValue);
     onSymptomSelect(currentValue);
     setOpen(false);
   };
+
+  useEffect(() => {
+    const searchSymptoms = async () => {
+      if (value.length < 2) {
+        setSuggestions([]);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const results = await NIHService.searchConditions(value);
+        setSuggestions(results);
+      } catch (error) {
+        dispatch({ type: "SET_ERROR", payload: "Failed to search symptoms" });
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(searchSymptoms, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [value, dispatch]);
 
   return (
     <div className="w-full max-w-[600px] bg-white/80 backdrop-blur-xl p-6 rounded-2xl shadow-lg shadow-blue-500/10 border border-white/20 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/20 hover:scale-[1.02] group">

@@ -1,35 +1,59 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import SymptomSearch from "./SymptomSearch";
 import SymptomTagList from "./SymptomTagList";
 import UrgencyAssessment from "./UrgencyAssessment";
+import PotentialDiagnoses from "./PotentialDiagnoses";
+import { useSymptoms } from "../context/SymptomContext";
+import NIHService from "../services/NIHService";
 
-interface Symptom {
-  id: string;
-  name: string;
+interface UrgencyResult {
+  level: "low" | "moderate" | "high" | "emergency";
+  reasoning: string[];
 }
 
 const Home = () => {
-  const [symptoms, setSymptoms] = useState<Symptom[]>([
-    { id: "1", name: "Headache" },
-    { id: "2", name: "Fever" },
-  ]);
+  const { state, dispatch } = useSymptoms();
+  const [urgencyResult, setUrgencyResult] = useState<UrgencyResult | null>(
+    null
+  );
 
-  const handleSymptomSelect = (symptomName: string) => {
-    const newSymptom = {
-      id: Date.now().toString(),
-      name: symptomName,
-    };
-    setSymptoms([...symptoms, newSymptom]);
+  const handleSymptomSelect = async (symptomName: string) => {
+    dispatch({ type: "ADD_SYMPTOM", payload: symptomName });
+    // Trigger assessment with updated symptoms
+    handleCheckUrgency([...state.currentSymptoms, symptomName]);
   };
 
   const handleSymptomRemove = (id: string) => {
-    setSymptoms(symptoms.filter((symptom) => symptom.id !== id));
+    dispatch({ type: "REMOVE_SYMPTOM", payload: id });
+    // Re-assess after removal
+    const updatedSymptoms = state.currentSymptoms.filter((s) => s !== id);
+    handleCheckUrgency(updatedSymptoms);
   };
 
-  const handleCheckUrgency = () => {
-    // Placeholder for urgency check functionality
-    console.log("Checking urgency for symptoms:", symptoms);
+  const handleCheckUrgency = async (symptoms: string[]) => {
+    if (symptoms.length === 0) {
+      setUrgencyResult(null);
+      return;
+    }
+
+    try {
+      dispatch({ type: "SET_LOADING", payload: true });
+      const result = await NIHService.determineUrgency(
+        symptoms.map((name) => ({ primary_name: name, consumer_name: name }))
+      );
+      setUrgencyResult(result);
+    } catch (error) {
+      console.error("Assessment failed:", error);
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Failed to assess symptom urgency",
+      });
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false });
+    }
   };
+
+  console.log("Home rendering, current symptoms:", state.currentSymptoms);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#2B4570]/5 to-[#A6E1E7]/5 p-8 relative overflow-hidden">
@@ -50,13 +74,23 @@ const Home = () => {
           placeholder="Type to search symptoms..."
         />
 
-        <SymptomTagList symptoms={symptoms} onRemove={handleSymptomRemove} />
+        <SymptomTagList
+          symptoms={state.currentSymptoms.map((name) => ({
+            id: name,
+            name: name,
+          }))}
+          onRemove={handleSymptomRemove}
+        />
 
         <UrgencyAssessment
-          symptoms={symptoms.map((s) => s.name)}
-          onCheckUrgency={handleCheckUrgency}
-          urgencyLevel="low"
+          symptoms={state.currentSymptoms}
+          onCheckUrgency={() => handleCheckUrgency(state.currentSymptoms)}
+          urgencyLevel={urgencyResult?.level || "low"}
+          reasoning={urgencyResult?.reasoning}
+          isLoading={state.isLoading}
         />
+
+        <PotentialDiagnoses symptoms={state.currentSymptoms} />
       </div>
     </div>
   );

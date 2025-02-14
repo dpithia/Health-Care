@@ -3,13 +3,14 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Button } from "./ui/button";
 import { AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
 
-type UrgencyLevel = "low" | "moderate" | "high";
+type UrgencyLevel = "low" | "moderate" | "high" | "emergency";
 
 interface UrgencyAssessmentProps {
-  symptoms?: string[];
-  urgencyLevel?: UrgencyLevel;
-  message?: string;
-  onCheckUrgency?: () => void;
+  symptoms: string[];
+  onCheckUrgency: () => void;
+  urgencyLevel: UrgencyLevel;
+  reasoning?: string[];
+  isLoading?: boolean;
 }
 
 const getUrgencyConfig = (level: UrgencyLevel) => {
@@ -32,52 +33,60 @@ const getUrgencyConfig = (level: UrgencyLevel) => {
       title: "High Urgency",
       defaultMessage: "Seek immediate medical attention.",
     },
+    emergency: {
+      color: "bg-red-100 text-red-800 border-red-200",
+      icon: AlertCircle,
+      title: "Emergency",
+      defaultMessage: "Seek immediate medical attention.",
+    },
   };
   return configs[level];
 };
 
 const UrgencyAssessment = ({
-  symptoms = ["headache", "fatigue"],
-  urgencyLevel = "low",
-  message,
-  onCheckUrgency = () => console.log("Checking urgency..."),
+  symptoms,
+  onCheckUrgency,
+  urgencyLevel,
+  reasoning = [],
+  isLoading = false,
 }: UrgencyAssessmentProps) => {
   const config = getUrgencyConfig(urgencyLevel);
   const Icon = config.icon;
 
+  const urgencyColors = {
+    low: "bg-green-100 text-green-800",
+    moderate: "bg-yellow-100 text-yellow-800",
+    high: "bg-orange-100 text-orange-800",
+    emergency: "bg-red-100 text-red-800",
+  };
+
   return (
-    <div className="w-full max-w-2xl mx-auto p-8 space-y-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg shadow-blue-500/10 border border-white/20 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/20">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Symptom Assessment
-        </h2>
-        <Button
-          onClick={onCheckUrgency}
-          className="relative bg-gradient-to-r from-[#2B4570] to-[#A6E1E7] hover:opacity-90 text-white font-medium px-8 py-3 rounded-xl transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg hover:shadow-blue-500/20 overflow-hidden group"
-        >
-          <span className="absolute inset-0 bg-gradient-to-r from-[#2B4570] to-[#A6E1E7] opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></span>
-          <span className="relative z-10">Check Urgency</span>
-        </Button>
-      </div>
+    <div className="space-y-4">
+      <button
+        onClick={onCheckUrgency}
+        disabled={symptoms.length === 0 || isLoading}
+        className={`w-full p-4 rounded-xl ${
+          symptoms.length === 0
+            ? "bg-gray-100 text-gray-400"
+            : "bg-[#2B4570] text-white hover:bg-[#2B4570]/90"
+        } transition-colors duration-200`}
+      >
+        {isLoading ? "Assessing..." : "Check Urgency"}
+      </button>
 
-      {symptoms.length > 0 && (
-        <Alert className={`${config.color} border`}>
-          <Icon className="h-5 w-5" />
-          <AlertTitle className="font-semibold">{config.title}</AlertTitle>
-          <AlertDescription>
-            {message || config.defaultMessage}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {urgencyLevel === "high" && (
-        <Alert className="bg-[#DC3545] text-white border-none">
-          <AlertCircle className="h-5 w-5" />
-          <AlertTitle className="font-semibold">Emergency Alert</AlertTitle>
-          <AlertDescription>
-            Your symptoms indicate you should seek emergency care immediately.
-          </AlertDescription>
-        </Alert>
+      {urgencyLevel && (
+        <div className={`p-4 rounded-xl ${urgencyColors[urgencyLevel]}`}>
+          <h3 className="font-semibold mb-2">
+            Urgency Level: {urgencyLevel.toUpperCase()}
+          </h3>
+          {reasoning && reasoning.length > 0 && (
+            <ul className="list-disc list-inside space-y-1">
+              {reasoning.map((reason, index) => (
+                <li key={index}>{reason}</li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );
